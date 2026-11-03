@@ -1,0 +1,27 @@
+name: Cas d’usage
+description: Ce que tu veux faire avec bige-sliders, et ce qui t’a bloqué
+title: "[usage] "
+labels: ["usage"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Ce que tu veux faire
+      description: Ton application, ton besoin, le résultat attendu.
+    validations:
+      required: true
+  - type: textarea
+    id: blocked
+    attributes:
+      label: Ce qui t’a bloqué
+      description: Installation, montage, hôte (enregistrement, images, exports), doc peu claire…
+    validations:
+      required: false
+  - type: textarea
+    id: setup
+    attributes:
+      label: Ton montage
+      description: Extrait de code utile (hôte, composant), bundler et framework.
+      render: ts
+    validations:
+      required: false

@@ -1,0 +1,19 @@
+name: Idée
+description: Une amélioration qui reste dans l’esprit d’un outil simple
+title: "[idée] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Le besoin
+      description: Ce qui est difficile ou impossible aujourd’hui.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Ta proposition
+      description: Comment ça devrait marcher, le plus simplement possible.
+    validations:
+      required: false

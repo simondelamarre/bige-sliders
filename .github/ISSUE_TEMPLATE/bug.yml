@@ -1,0 +1,39 @@
+name: Problème
+description: Quelque chose casse ou ne fait pas ce qu’annonce la doc
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Ce qui se passe
+      description: Étapes pour reproduire, résultat attendu, résultat obtenu.
+      placeholder: |
+        1. …
+        2. …
+        Attendu : …
+        Obtenu : …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version de bige-sliders
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environnement
+      description: Navigateur, bundler (Vite, webpack…), version de Vue.
+      placeholder: Chrome 131, Vite 6, Vue 3.5
+    validations:
+      required: false
+  - type: textarea
+    id: details
+    attributes:
+      label: Console, captures, fichier exporté
+      description: Erreurs de la console, capture d’écran, ou le PDF / PPTX en cause (sans données sensibles).
+    validations:
+      required: false
