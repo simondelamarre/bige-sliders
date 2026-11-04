@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.vite/
+vendor/
+*.tgz
+*.local
+npm-debug.log*
+.DS_Store
+# Pas de verrou : la démo installe la dernière version compatible publiée sur npm.
+package-lock.json
