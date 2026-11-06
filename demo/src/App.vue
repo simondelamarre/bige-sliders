@@ -4,6 +4,7 @@ import { createPresentationDocument, createSlideFromLayout, definePresentationHo
 import { PresentationWorkspace } from "bige-sliders/vue";
 import "bige-sliders/style.css";
 import { runAgentExample } from "./agentExample";
+import { forgetSaved, storeBookmark, storeThemes } from "./catalog";
 
 /**
  * Démo de bige-sliders, montée comme dans son README : un deck dans
@@ -39,11 +40,11 @@ const host = definePresentationHost({
 const editorKey = ref(0);
 const notice = ref("");
 
+/** Repart de zéro : deck et réglages gardés par la démo (le catalogue se règle au chargement). */
 function reset() {
   localStorage.removeItem(STORAGE_KEY);
-  deck.value = demoDeck();
-  editorKey.value += 1;
-  notice.value = "";
+  forgetSaved();
+  location.reload();
 }
 
 /**
@@ -62,38 +63,78 @@ async function tryAgent() {
 
 <template>
   <div class="demo">
-    <header class="bar">
-      <strong>bige-sliders</strong>
-      <span class="tagline">Éditeur de slides 16:9 pour Vue 3 · exports PDF et PPTX · compatible agents</span>
-      <nav>
-        <button type="button" title="Ajoute une slide par l’API agent (opérations JSON)" @click="tryAgent">Essayer l’API agent</button>
-        <button type="button" @click="reset">Réinitialiser</button>
-        <a href="https://github.com/simondelamarre/bige-sliders" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://stackblitz.com/github/simondelamarre/bige-sliders/tree/main/demo" target="_blank" rel="noopener">StackBlitz</a>
-        <a class="cta" href="https://www.npmjs.com/package/bige-sliders" target="_blank" rel="noopener">Installer depuis npm</a>
+    <header class="hero">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"><i /><i /><i /></span>
+        <div>
+          <p class="name">bige-sliders</p>
+          <p class="tagline">L’éditeur de slides 16:9 pour Vue 3, à brancher dans ton app.</p>
+        </div>
+      </div>
+      <ul class="features" aria-label="Ce que fait le package">
+        <li>PDF et PPTX modifiable</li>
+        <li>Layouts et onglets à toi</li>
+        <li>Habillages : en-tête, pied, numéro</li>
+        <li>Favoris de slides</li>
+        <li>Pilotable par un agent</li>
+      </ul>
+      <nav class="actions">
+        <button type="button" class="ghost" title="Ajoute une slide par l’API agent (opérations JSON)" @click="tryAgent">Essayer l’API agent</button>
+        <button type="button" class="ghost" @click="reset">Réinitialiser</button>
+        <a class="ghost" href="https://github.com/simondelamarre/bige-sliders" target="_blank" rel="noopener">GitHub</a>
+        <a class="ghost" href="https://stackblitz.com/github/simondelamarre/bige-sliders/tree/main/demo" target="_blank" rel="noopener">StackBlitz</a>
+        <a class="cta" href="https://www.npmjs.com/package/bige-sliders" target="_blank" rel="noopener"><code>npm i bige-sliders</code></a>
       </nav>
+      <p class="tips">À essayer : <b>⋯</b> sur une slide → « Enregistrer comme layout » · onglet <b>Thème</b> → « Habillages » → crayon. Tes favoris et thèmes reviennent au rechargement.</p>
       <p v-if="notice" class="notice" role="status">{{ notice }}</p>
     </header>
     <main class="editor">
-      <PresentationWorkspace :key="editorKey" v-model="deck" deck-name="Démo bige-sliders" :host="host" appearance="light" />
+      <PresentationWorkspace :key="editorKey" v-model="deck" deck-name="Démo bige-sliders" :host="host" appearance="light" @bookmark="storeBookmark" @theme-save="storeThemes" />
     </main>
     <footer class="foot">Né dans <a href="https://bige.dev/" target="_blank" rel="noopener">bige-ops</a> · MPL-2.0</footer>
   </div>
 </template>
 
 <style scoped>
-.demo { display: flex; flex-direction: column; height: 100vh; }
-.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 8px 16px; background: #ffffff; border-bottom: 1px solid #dde1e7; font-size: 13px; color: #1f2733; }
-.tagline { color: #5b6573; }
-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-left: auto; }
-nav a, nav button { color: #0b7566; text-decoration: none; font: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
-nav a:hover, nav button:hover { text-decoration: underline; }
-nav .cta { padding: 6px 12px; border-radius: 6px; background: #cb3837; color: #ffffff; font-weight: 600; }
-nav .cta:hover { text-decoration: none; background: #a82e2d; }
-.notice { flex-basis: 100%; margin: 0; color: #0b7566; }
+.demo { display: flex; flex-direction: column; height: 100vh; background: #f4f6f8; }
+.hero {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px 24px;
+  padding: 14px 20px 12px;
+  color: #eef2f6;
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(62 224 192 / 0.16), transparent 55%),
+    radial-gradient(90% 120% at 100% 0%, rgb(203 56 55 / 0.14), transparent 60%),
+    #0e1116;
+  font: 13px/1.4 Inter, system-ui, sans-serif;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.mark { display: grid; grid-template-rows: 6px 4px 4px; gap: 3px; width: 34px; height: 26px; padding: 5px; border-radius: 7px; background: #1a2029; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08); }
+.mark i { display: block; border-radius: 2px; background: #3ee0c0; }
+.mark i:nth-child(2) { width: 70%; background: #9aa4b2; }
+.mark i:nth-child(3) { width: 45%; background: #9aa4b2; }
+.name { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.tagline { margin: 2px 0 0; color: #9aa4b2; }
+.features { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.features li { padding: 3px 9px; border: 1px solid rgb(62 224 192 / 0.35); border-radius: 999px; color: #c9f5ea; font-size: 11.5px; white-space: nowrap; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
+.ghost { padding: 6px 10px; border: 1px solid rgb(255 255 255 / 0.14); border-radius: 7px; background: transparent; color: #eef2f6; font: inherit; text-decoration: none; cursor: pointer; }
+.ghost:hover { border-color: rgb(62 224 192 / 0.6); color: #ffffff; }
+.cta { padding: 6px 12px; border-radius: 7px; background: #cb3837; color: #ffffff; text-decoration: none; box-shadow: 0 6px 18px rgb(203 56 55 / 0.35); }
+.cta:hover { background: #b02f2e; }
+.cta code { font: 600 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.tips { grid-column: 1 / -1; margin: 0; color: #9aa4b2; font-size: 12px; }
+.tips b { color: #eef2f6; font-weight: 600; }
+.notice { grid-column: 1 / -1; margin: 0; padding: 6px 10px; border-radius: 7px; background: rgb(62 224 192 / 0.12); color: #c9f5ea; }
 .editor { flex: 1; min-height: 0; }
-.foot { padding: 4px 16px; font-size: 11px; color: #5b6573; background: #ffffff; border-top: 1px solid #dde1e7; }
+.foot { padding: 4px 20px; font-size: 11px; color: #5b6573; background: #ffffff; border-top: 1px solid #dde1e7; }
 .foot a { color: inherit; }
+@media (max-width: 1100px) {
+  .hero { grid-template-columns: 1fr; }
+  .actions { justify-content: flex-start; }
+}
 </style>
 
 <style>

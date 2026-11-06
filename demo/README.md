@@ -12,10 +12,10 @@ npm run build      # dist/, servi par GitHub Pages
 
 | Fichier | Ce qu’il montre |
 |---|---|
-| [`src/App.vue`](./src/App.vue) | L’éditeur monté comme dans le README : deck dans `localStorage`, hôte avec `save`, conteneur qui a une hauteur, `v-model`, remontage par `:key`, et la surcharge des couleurs de l’interface (variables CSS, en commentaire). |
+| [`src/App.vue`](./src/App.vue) | L’éditeur monté comme dans le README : deck dans `localStorage`, hôte avec `save`, `@bookmark` et `@theme-save` stockés, conteneur qui a une hauteur, `v-model`, remontage par `:key`, et la surcharge des couleurs de l’interface (variables CSS, en commentaire). |
 | [`src/agentExample.ts`](./src/agentExample.ts) | Compatible agents : une slide créée et remplie par opérations JSON, un refus expliqué, le contrôle de mise en page. Sans Vue : le même code tourne dans Node. |
-| [`src/catalog.ts`](./src/catalog.ts) | Catalogue réglé au démarrage : un layout maison (« Chiffre phare »), un thème maison (« Braise », avec son habillage : filet, titre du deck, « {page} / {total} ») pour les nouveaux decks, des onglets réorganisés dans la galerie. |
-| [`src/main.ts`](./src/main.ts) | Réglage du catalogue, puis montage de l’app Vue. |
+| [`src/catalog.ts`](./src/catalog.ts) | Catalogue réglé au démarrage, avec les favoris et thèmes personnels gardés dans `localStorage` : un layout maison (« Chiffre phare »), un thème maison (« Braise », avec son habillage : filet, titre du deck, « {page} / {total} ») pour les nouveaux decks, des onglets réorganisés dans la galerie. |
+| [`src/main.ts`](./src/main.ts) | Réglage du catalogue (avec les favoris et thèmes gardés), puis montage de l’app Vue. |
 | [`vite.config.js`](./vite.config.js) | `base` à `/bige-sliders/` pour GitHub Pages (variable `DEMO_BASE`), à la racine sinon. |
 
 Documentation complète du package : [README](../README.md) ou

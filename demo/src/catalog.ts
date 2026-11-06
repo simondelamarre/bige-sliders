@@ -3,7 +3,10 @@ import {
   configurePresentationCatalog,
   definePresentationTheme,
   layoutText,
+  type PresentationBookmark,
   type PresentationLayoutDefinition,
+  type PresentationThemeSave,
+  type PresentationThemePreset,
 } from "bige-sliders";
 
 /**
@@ -47,21 +50,61 @@ const braise = definePresentationTheme({
   ],
 });
 
+/**
+ * Favoris et thèmes personnels : l’éditeur les émet (`@bookmark`,
+ * `@theme-save`), l’app les garde où elle veut (ici `localStorage`) et les
+ * renvoie au catalogue au chargement suivant.
+ */
+const SAVED_KEY = "bige-sliders-demo.saved";
+type Saved = { layouts?: PresentationBookmark["layouts"]; themes?: PresentationThemePreset[] };
+
+function readSaved(): Saved {
+  try {
+    return JSON.parse(localStorage.getItem(SAVED_KEY) || "{}") as Saved;
+  } catch {
+    return {};
+  }
+}
+
+function writeSaved(patch: Saved) {
+  localStorage.setItem(SAVED_KEY, JSON.stringify({ ...readSaved(), ...patch }));
+}
+
+/** `@bookmark` : le réglage `layouts` complet, à renvoyer tel quel. */
+export function storeBookmark(bookmark: PresentationBookmark) {
+  writeSaved({ layouts: bookmark.layouts });
+}
+
+/** `@theme-save` : la liste des thèmes personnels après le changement. */
+export function storeThemes(event: PresentationThemeSave) {
+  writeSaved({ themes: event.themes });
+}
+
+export function forgetSaved() {
+  localStorage.removeItem(SAVED_KEY);
+}
+
+const DEMO_TABS = [
+  // `statement` sert à l’exemple d’API agent : un layout hors onglets lui serait refusé.
+  { label: "Démo", layouts: ["demo-highlight", "cover", "statement"] },
+  { label: "Récit", layouts: ["problem", "solution", "quote", "timeline"] },
+  { label: "Chiffres", layouts: ["metric-grid", "chart", "data-table", "traction"] },
+  { label: "Décider", layouts: ["comparison", "pricing"] },
+];
+
 export function setupDemoCatalog() {
+  const saved = readSaved();
+  const themes = saved.themes ?? [];
   configurePresentationCatalog({
     layouts: {
       definitions: [highlight],
-      tabs: [
-        // `statement` sert à l’exemple d’API agent : un layout hors onglets lui serait refusé.
-        { label: "Démo", layouts: ["demo-highlight", "cover", "statement"] },
-        { label: "Récit", layouts: ["problem", "solution", "quote", "timeline"] },
-        { label: "Chiffres", layouts: ["metric-grid", "chart", "data-table", "traction"] },
-        { label: "Décider", layouts: ["comparison", "pricing"] },
-      ],
+      // Les favoris reviennent avec leurs onglets ; sans favori, ceux de la démo.
+      templates: saved.layouts?.templates,
+      tabs: saved.layouts?.tabs ?? DEMO_TABS,
     },
     themes: {
-      definitions: [braise],
-      list: ["demo-braise", "bige-dark", "capital"],
+      definitions: [braise, ...themes],
+      list: ["demo-braise", "bige-dark", "capital", ...themes.map((theme) => theme.id)],
       default: "demo-braise",
     },
   });
