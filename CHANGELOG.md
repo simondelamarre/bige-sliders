@@ -3,6 +3,25 @@
 Versions de `bige-sliders`, de la plus récente à la plus ancienne. En 0.x, un
 changement cassant fait monter le chiffre du milieu.
 
+## 0.5.0 · 2026-11-06
+
+- **Favoris de slides** : menu ⋯ d’une slide → « Enregistrer comme layout »
+  (nom, onglet existant ou nouveau, description). Le layout apparaît tout de
+  suite dans la galerie et pour l’agent ; une slide issue d’un favori peut le
+  mettre à jour. Événement `@bookmark` avec le réglage `layouts` complet à
+  stocker et à renvoyer (`layouts.templates`, `layouts.tabs`).
+- Layouts en JSON (`PresentationLayoutTemplate`) : la slide, ses images et ses
+  zones titre et texte ; `layoutTemplateFromSlide`, `layoutFromTemplate`,
+  `saveLayoutTemplate`, `savedPresentationLayouts`.
+- **`@theme-save`** à chaque création, modification ou suppression d’un thème
+  personnel, avec la liste complète ; les thèmes renvoyés par l’app et ceux
+  du poste se fusionnent sans doublon.
+- Icônes : un SVG sans taille en pixels (l’étoile par défaut, les icônes en
+  `em`) était dessiné décalé et coupé dans Chrome ; il s’affiche entier.
+- README : captures, tableau des fonctions, section « Favoris et thèmes
+  personnels ». Démo : nouvel en-tête, favoris et thèmes gardés au
+  rechargement.
+
 ## 0.4.0 · 2026-11-06
 
 - **Habillages** à la place des repères (changement cassant) : des calques

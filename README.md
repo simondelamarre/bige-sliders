@@ -8,16 +8,36 @@
   <a href="https://stackblitz.com/github/simondelamarre/bige-sliders/tree/main/demo"><img src="https://img.shields.io/badge/StackBlitz-modifier%20la%20d%C3%A9mo-1389fd?style=for-the-badge&logo=stackblitz&logoColor=white" alt="Modifier la démo dans StackBlitz" height="36" /></a>
 </p>
 
-Éditeur de slides 16:9 pour Vue 3, rendu avec Fabric, avec exports PDF et PPTX
-construits dans le navigateur (PPTX modifiable : formes, tracés, dégradés,
-masques, tableaux, graphiques). L’éditeur ne connaît ni ton application ni ton
-stockage : tout ce qui en dépend passe par un **hôte** que tu fournis.
+<p align="center"><strong>L’éditeur de slides 16:9 pour Vue 3, à brancher dans ton app.</strong><br />
+Exports PDF et PPTX modifiable, tes layouts et tes thèmes, des habillages,
+des favoris de slides, et une API JSON qu’un agent peut piloter.</p>
 
-**Compatible agents par principe** : tout ce que fait l’interface, un agent
-(LLM) peut le faire par des opérations JSON, sans Vue ni navigateur
-(voir [Compatible agents](#compatible-agents)).
+<p align="center">
+  <a href="https://simondelamarre.github.io/bige-sliders/"><img src="https://raw.githubusercontent.com/simondelamarre/bige-sliders/main/assets/editor.png" alt="L’éditeur bige-sliders : slides, canevas, inspecteur et habillage du thème" width="900" /></a>
+</p>
 
-> Version 0.2 : l’API peut encore bouger avant la 1.0. Les changements sont
+| | |
+|---|---|
+| **Un vrai éditeur** | Texte riche, formes, plume, images, icônes, graphiques, tableaux, calques, groupes, masques, dégradés, opacités, raccourcis clavier. |
+| **Des exports fidèles** | PDF (police Inter embarquée) et PPTX modifiable (formes, tracés, tableaux, graphiques), construits dans le navigateur. |
+| **Ton catalogue** | Tes layouts, tes onglets de galerie, tes thèmes et ton thème par défaut, réglés au démarrage. |
+| **Des habillages** | En-tête, pied, numéro, logo : un calque édité comme une slide, avec `{page}`, `{total}`, `{deck}`… |
+| **Des favoris** | « Enregistrer comme layout » sur une slide : tu reçois `@bookmark`, tu stockes, tu renvoies au chargement. |
+| **Compatible agents** | Tout ce que fait l’interface, un agent (LLM) le fait en opérations JSON, sans Vue ni navigateur. |
+| **Ton stockage** | Enregistrement, images (S3…), exports et préférences passent par un hôte que tu fournis. |
+
+<table>
+  <tr>
+    <td width="50%"><img src="https://raw.githubusercontent.com/simondelamarre/bige-sliders/main/assets/gallery.png" alt="Galerie de compositions avec les onglets et le layout de l’app" /></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/simondelamarre/bige-sliders/main/assets/dressing.png" alt="Un habillage édité sur le canevas, avec ses variables" /></td>
+  </tr>
+  <tr>
+    <td align="center">Galerie : tes onglets, tes layouts, tes favoris</td>
+    <td align="center">Habillage : édité comme une slide, variables remplies à l’affichage</td>
+  </tr>
+</table>
+
+> Version 0.5 : l’API peut encore bouger avant la 1.0. Les changements sont
 > listés dans le [CHANGELOG](https://github.com/simondelamarre/bige-sliders/blob/main/CHANGELOG.md).
 
 Un outil simple pour des cas simples : faire des slides propres dans une
@@ -34,6 +54,7 @@ webapp et les sortir en PDF ou en PowerPoint, sans réinventer la roue.
 - [Le document](#le-document)
 - [Catalogue : layouts, onglets et thèmes](#catalogue--layouts-onglets-et-thèmes)
 - [Habillages : en-tête, pied, numéro et décor](#habillages--en-tête-pied-numéro-et-décor)
+- [Favoris et thèmes personnels : `@bookmark`, `@theme-save`](#favoris-et-thèmes-personnels--bookmark-theme-save)
 - [Apparence de l’interface](#apparence-de-linterface)
 - [Chargement à la demande, Nuxt](#chargement-à-la-demande-nuxt)
 - [Compatible agents](#compatible-agents)
@@ -125,6 +146,8 @@ l’éditeur (`:key`).
 |---|---|---|
 | `update:modelValue` | `PresentationDocument` | À chaque modification (c’est ce que lit `v-model`). |
 | `save-state` | `PresentationSaveState` | Avec un `save` fourni : `pending`, `saving`, `saved` (avec `at`), `error` (avec `message`). L’éditeur l’affiche déjà ; l’événement sert si tu veux l’afficher ailleurs. |
+| `bookmark` | `PresentationBookmark` | Une slide enregistrée comme layout (menu ⋯ de la slide). Voir [Favoris](#favoris-et-thèmes-personnels--bookmark-theme-save). |
+| `theme-save` | `PresentationThemeSave` | Un thème personnel créé, modifié ou supprimé. |
 
 ### Méthode exposée
 
@@ -469,6 +492,67 @@ remplies) et `PRESENTATION_DRESSING_VARIABLES`.
 Un deck enregistré avant la 0.4.0 garde son rendu : ses anciens repères
 (`chrome`) sont lus comme un habillage « Standard » équivalent et écrits en
 habillage à la première modification.
+
+## Favoris et thèmes personnels : `@bookmark`, `@theme-save`
+
+Tes utilisateurs enrichissent eux-mêmes le catalogue ; toi, tu choisis où ça
+se range (compte, base, fichier…) et tu le renvoies au chargement.
+
+- **Favoris de slides** : menu ⋯ d’une slide → « Enregistrer comme layout »
+  (nom, onglet existant ou nouveau, description). Le layout apparaît tout de
+  suite dans la galerie et pour l’agent. Une slide créée depuis un favori
+  propose ensuite « Mettre à jour » (même id, rangé au même endroit) ou
+  « Nouveau layout ». Les layouts livrés ou écrits en code ne s’écrasent pas.
+- **Thèmes personnels** : « Dupliquer dans mes thèmes », « Créer un thème »,
+  chaque modification et la suppression émettent `@theme-save`. Par défaut,
+  l’éditeur les garde aussi dans `host.storage` ; ce que tu renvoies et ce
+  qu’il a gardé se fusionnent, sans doublon.
+
+| Événement | Charge |
+|---|---|
+| `bookmark` | `{ action: "create" \| "update", template, tab, layouts: { templates, tabs } }` : `layouts` est le réglage complet après l’enregistrement, à renvoyer tel quel. |
+| `theme-save` | `{ action: "create" \| "update" \| "remove", theme, themes }` : `themes` est la liste complète des thèmes personnels. |
+
+```vue
+<script setup lang="ts">
+import type { PresentationBookmark, PresentationThemeSave } from "bige-sliders";
+
+// Où tu veux : ici localStorage, chez toi une API.
+const store = (patch: object) => localStorage.setItem("my-slides", JSON.stringify({ ...saved(), ...patch }));
+const saved = () => JSON.parse(localStorage.getItem("my-slides") || "{}");
+
+const onBookmark = (event: PresentationBookmark) => store({ layouts: event.layouts });
+const onThemeSave = (event: PresentationThemeSave) => store({ themes: event.themes });
+</script>
+
+<template>
+  <PresentationWorkspace v-model="deck" deck-name="Mon deck" :host="host" @bookmark="onBookmark" @theme-save="onThemeSave" />
+</template>
+```
+
+```ts
+// main.ts, au chargement suivant, avant de monter l’éditeur :
+const { layouts, themes = [] } = JSON.parse(localStorage.getItem("my-slides") || "{}");
+configurePresentationCatalog({
+  layouts: { definitions: myCodeLayouts, ...layouts }, // templates + tabs
+  themes: { definitions: themes },
+});
+```
+
+Un layout enregistré (`PresentationLayoutTemplate`) est du JSON :
+
+| Champ | Rôle |
+|---|---|
+| `id`, `name`, `label`, `description`, `use` | Comme un layout en code ; `use` guide l’agent. |
+| `category` | Onglet où il est rangé. |
+| `slide` | `{ background, dressing?, elements, groups? }` : la slide, ids sans préfixe (`s3-titre` → `titre`). |
+| `slots` | `{ title?, body? }` : noms des textes qui reçoivent le titre et le texte d’une slide créée avec du contenu. |
+| `sample` | Titre et texte posés sans contenu. |
+| `assets` | Images et icônes de la slide (data URL, ou `key` de ton magasin), ajoutées au deck avec elle. |
+| `savedAt` | Date d’enregistrement (ISO). |
+
+Par code : `layoutTemplateFromSlide(deck, slide, meta)`, `layoutFromTemplate(template)`,
+`saveLayoutTemplate(template, tab)` et `savedPresentationLayouts()`.
 
 ## Apparence de l’interface
 
