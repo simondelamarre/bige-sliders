@@ -5,6 +5,7 @@ import { PresentationWorkspace } from "bige-sliders/vue";
 import "bige-sliders/style.css";
 import { runAgentExample } from "./agentExample";
 import { forgetSaved, storeBookmark, storeThemes } from "./catalog";
+import LayoutManager from "./LayoutManager.vue";
 
 /**
  * Démo de bige-sliders, montée comme dans son README : un deck dans
@@ -38,6 +39,8 @@ const host = definePresentationHost({
 
 // `host` et `appearance` sont lus au montage : changer la clé remonte l’éditeur.
 const editorKey = ref(0);
+/** Le deck complet, ou la page de gestion des favoris. */
+const view = ref<"deck" | "layouts">("deck");
 const notice = ref("");
 
 /** Repart de zéro : deck et réglages gardés par la démo (le catalogue se règle au chargement). */
@@ -79,17 +82,22 @@ async function tryAgent() {
         <li>Pilotable par un agent</li>
       </ul>
       <nav class="actions">
+        <div class="switch" role="tablist" aria-label="Vue de la démo">
+          <button type="button" role="tab" :aria-selected="view === 'deck'" :class="view === 'deck' ? 'is-on' : ''" @click="view = 'deck'">Deck</button>
+          <button type="button" role="tab" :aria-selected="view === 'layouts'" :class="view === 'layouts' ? 'is-on' : ''" @click="view = 'layouts'">Mes layouts</button>
+        </div>
         <button type="button" class="ghost" title="Ajoute une slide par l’API agent (opérations JSON)" @click="tryAgent">Essayer l’API agent</button>
         <button type="button" class="ghost" @click="reset">Réinitialiser</button>
         <a class="ghost" href="https://github.com/simondelamarre/bige-sliders" target="_blank" rel="noopener">GitHub</a>
         <a class="ghost" href="https://stackblitz.com/github/simondelamarre/bige-sliders/tree/main/demo" target="_blank" rel="noopener">StackBlitz</a>
         <a class="cta" href="https://www.npmjs.com/package/bige-sliders" target="_blank" rel="noopener"><code>npm i bige-sliders</code></a>
       </nav>
-      <p class="tips">À essayer : <b>⋯</b> sur une slide → « Enregistrer comme layout » · onglet <b>Thème</b> → « Habillages » → crayon. Tes favoris et thèmes reviennent au rechargement.</p>
+      <p class="tips">À essayer : <b>⋯</b> sur une slide → « Enregistrer comme layout » · onglet <b>Thème</b> → « Habillages » → crayon. « Mes layouts » : vignettes et édition d’un favori seul. Tes favoris et thèmes reviennent au rechargement.</p>
       <p v-if="notice" class="notice" role="status">{{ notice }}</p>
     </header>
     <main class="editor">
-      <PresentationWorkspace :key="editorKey" v-model="deck" deck-name="Démo bige-sliders" :host="host" appearance="light" @bookmark="storeBookmark" @theme-save="storeThemes" />
+      <LayoutManager v-if="view === 'layouts'" :document="deck" :host="host" />
+      <PresentationWorkspace v-else :key="editorKey" v-model="deck" deck-name="Démo bige-sliders" :host="host" appearance="light" @bookmark="storeBookmark" @theme-save="storeThemes" />
     </main>
     <footer class="foot">Né dans <a href="https://bige.dev/" target="_blank" rel="noopener">bige-ops</a> · MPL-2.0</footer>
   </div>
@@ -99,7 +107,7 @@ async function tryAgent() {
 .demo { display: flex; flex-direction: column; height: 100vh; background: #f4f6f8; }
 .hero {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: 10px 24px;
   padding: 14px 20px 12px;
@@ -117,9 +125,12 @@ async function tryAgent() {
 .mark i:nth-child(3) { width: 45%; background: #9aa4b2; }
 .name { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
 .tagline { margin: 2px 0 0; color: #9aa4b2; }
-.features { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.features { grid-column: 1 / -1; grid-row: 2; display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .features li { padding: 3px 9px; border: 1px solid rgb(62 224 192 / 0.35); border-radius: 999px; color: #c9f5ea; font-size: 11.5px; white-space: nowrap; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
+.switch { display: inline-flex; padding: 2px; border: 1px solid rgb(255 255 255 / 0.14); border-radius: 8px; }
+.switch button { padding: 5px 10px; border: 0; border-radius: 6px; background: transparent; color: #9aa4b2; font: inherit; cursor: pointer; }
+.switch button.is-on { background: #3ee0c0; color: #0e1116; font-weight: 600; }
 .ghost { padding: 6px 10px; border: 1px solid rgb(255 255 255 / 0.14); border-radius: 7px; background: transparent; color: #eef2f6; font: inherit; text-decoration: none; cursor: pointer; }
 .ghost:hover { border-color: rgb(62 224 192 / 0.6); color: #ffffff; }
 .cta { padding: 6px 12px; border-radius: 7px; background: #cb3837; color: #ffffff; text-decoration: none; box-shadow: 0 6px 18px rgb(203 56 55 / 0.35); }

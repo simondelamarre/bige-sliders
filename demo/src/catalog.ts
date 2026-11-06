@@ -75,6 +75,11 @@ export function storeBookmark(bookmark: PresentationBookmark) {
   writeSaved({ layouts: bookmark.layouts });
 }
 
+/** Après une modification ou une suppression dans la page « Mes layouts ». */
+export function storeLayouts(layouts: PresentationBookmark["layouts"]) {
+  writeSaved({ layouts });
+}
+
 /** `@theme-save` : la liste des thèmes personnels après le changement. */
 export function storeThemes(event: PresentationThemeSave) {
   writeSaved({ themes: event.themes });
