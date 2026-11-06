@@ -32,6 +32,8 @@ webapp et les sortir en PDF ou en PowerPoint, sans réinventer la roue.
 - [L’hôte : `definePresentationHost`](#lhôte--definepresentationhost)
 - [Exemples d’hôte](#exemples-dhôte)
 - [Le document](#le-document)
+- [Catalogue : layouts, onglets et thèmes](#catalogue--layouts-onglets-et-thèmes)
+- [Habillages : en-tête, pied, numéro et décor](#habillages--en-tête-pied-numéro-et-décor)
 - [Apparence de l’interface](#apparence-de-linterface)
 - [Chargement à la demande, Nuxt](#chargement-à-la-demande-nuxt)
 - [Compatible agents](#compatible-agents)
@@ -279,10 +281,8 @@ Layouts livrés : `cover`, `problem`, `solution`, `statement`, `quote`, `image`,
 `two-column`, `timeline`, `team`, `traction`, `metric-grid`, `chart`,
 `data-table`, `market-size`, `comparison`, `competitive-matrix`, `pricing`.
 
-Ajouter tes propres layouts ou thèmes, au démarrage de l’app, avant d’ouvrir
-l’éditeur : `registerPresentationLayout(definition)` et
-`registerPresentationTheme(preset)`. La galerie, l’ajout de slide et les
-commandes pour agents les voient.
+`createSlideFromLayout` accepte tout layout connu, même absent de la galerie.
+Pour choisir ce que l’éditeur propose, voir [Catalogue](#catalogue--layouts-onglets-et-thèmes).
 
 Aperçu d’une slide en image (miniature, partage) :
 
@@ -291,6 +291,184 @@ import { renderSlideSnapshot } from "bige-sliders/vue";
 
 const jpegDataUrl = await renderSlideSnapshot(deck, deck.slides[0].id, 640);
 ```
+
+## Catalogue : layouts, onglets et thèmes
+
+Par défaut, l’éditeur propose les 17 layouts livrés dans quatre onglets
+(Récit, Produit, Preuves, Stratégie), les thèmes livrés, et un nouveau deck
+part du thème `bige-dark`. Ton app remplace tout ça au démarrage avec
+`configurePresentationCatalog`, **avant de monter l’éditeur** :
+
+```ts
+// catalog.ts, importé par main.ts avant createApp(...).mount()
+import {
+  baseSlide,
+  configurePresentationCatalog,
+  definePresentationTheme,
+  layoutText,
+  type PresentationLayoutDefinition,
+} from "bige-sliders";
+
+// Un layout à toi : une fonction qui construit la slide sur 1600 × 900.
+const highlight: PresentationLayoutDefinition = {
+  id: "acme-highlight",
+  name: "Mettre un chiffre en avant", // titre dans la galerie
+  label: "Chiffre phare",             // étiquette courte (galerie, agent)
+  description: "Un grand chiffre, son titre et son contexte",
+  category: "Acme",                   // onglet si tu ne donnes pas `tabs`
+  use: "Un seul résultat chiffré qui porte le message.", // guide l’agent
+  sample: { title: "Des decks prêts en 10 minutes", body: "Contexte du chiffre." },
+  build: (index, content) => baseSlide(`slide-${index}`, content.title, "acme-highlight", [
+    { id: `s${index}-band`, name: "Bandeau", type: "shape", shape: "rect", x: 0, y: 0, width: 560, height: 900, fill: "accentSoft", source: "manual" },
+    layoutText(`s${index}-figure`, "Chiffre", "87 %", 80, 330, 420, 200, 84, { textStyle: "kpi", color: "accent", align: "center" }),
+    layoutText(`s${index}-title`, "Titre", content.title, 640, 250, 860, 200, 64, { textStyle: "title" }),
+    layoutText(`s${index}-body`, "Contexte", content.body, 644, 480, 820, 200, 30, { textStyle: "body", color: "muted" }),
+  ]),
+};
+
+// Un thème à toi : id, nom, ton et six couleurs suffisent.
+const acme = definePresentationTheme({
+  id: "acme",
+  name: "Acme",
+  tone: "dark",
+  colors: { background: "#14100f", surface: "#221a18", text: "#fbf4f1", muted: "#b9a7a1", accent: "#ff7a45", accentSoft: "#4a2418" },
+});
+
+configurePresentationCatalog({
+  layouts: {
+    definitions: [highlight],
+    tabs: [
+      { label: "Acme", layouts: ["acme-highlight", "cover", "statement"] },
+      { label: "Chiffres", layouts: ["metric-grid", "chart", "data-table"] },
+      { label: "Décider", layouts: ["comparison", "pricing"] },
+    ],
+  },
+  themes: {
+    definitions: [acme],
+    list: ["acme", "bige-dark", "capital"],
+    default: "acme",
+  },
+});
+```
+
+Règles :
+
+- **`layouts.tabs`** décide de tout : les onglets de la galerie, leur ordre,
+  l’ordre des layouts. Un layout livré n’apparaît que si tu le cites. Sans
+  `tabs`, les quatre onglets livrés restent et tes layouts s’ajoutent après,
+  regroupés par `category`.
+- **`themes.list`** donne les thèmes proposés et leur ordre (livrés ou à toi).
+  Sans liste : ceux livrés, puis les tiens. Les thèmes que l’utilisateur crée
+  dans l’éditeur s’ajoutent toujours à la galerie.
+- **`themes.default`** est le thème des nouveaux decks. Sans valeur :
+  `bige-dark` s’il est proposé, sinon le premier de la liste.
+- **L’agent voit le même catalogue** : `deckLayoutCatalog()`,
+  `applyDeckOperations` (un layout hors galerie est refusé avec la liste des
+  layouts proposés), `themeCatalog()` et `editDeckTheme`.
+- Un réglage incohérent (id inconnu, onglet vide, thème par défaut absent de
+  la liste) lève une `PresentationCatalogError` qui dit quoi corriger, et
+  ne change rien.
+- Le réglage vaut pour toute la page : un seul catalogue par app. Les decks
+  déjà créés gardent leur thème ; le deck de départ de l’hôte utilise le
+  premier layout du premier onglet.
+
+Un layout (`PresentationLayoutDefinition`) :
+
+| Champ | Rôle |
+|---|---|
+| `id` | Identifiant, enregistré dans chaque slide (`slide.layout`). Un id livré est remplacé. |
+| `name`, `label`, `description` | Titre, étiquette et description dans la galerie. |
+| `category` | Onglet quand tu ne donnes pas `tabs`. |
+| `use` | Quand l’utiliser : l’agent le lit pour choisir. |
+| `sample` | `{ title, body }` posés quand la slide est créée sans contenu. |
+| `build(index, content)` | Construit la slide. Les éléments texte nommés (`"Titre"`, `"Contexte"`…) deviennent les zones que l’agent remplit. Préfixe les ids par `s${index}-`. |
+
+Briques exportées : `baseSlide(id, name, layout, elements, groups?)`,
+`layoutText(id, name, text, x, y, width, height, fontSize, options?)` et
+`groupId(index, name)`. Couleurs et styles de texte : les jetons du thème
+(`background`, `surface`, `text`, `muted`, `accent`, `accentSoft` ; `title`,
+`body`, `kpi`…), pour que la slide suive le thème choisi.
+
+Un thème (`definePresentationTheme`) :
+
+| Champ | Défaut |
+|---|---|
+| `id`, `name`, `tone` (`"dark"` ou `"light"`), `colors` | Obligatoires. |
+| `description`, `bestFor`, `colorNames` | Vides : textes de la fiche du thème. |
+| `bodyFont`, `headingFont` | `Inter`, livrée avec l’éditeur, identique dans le PDF. Une autre police doit être installée chez l’utilisateur ou chargée par `readSystemFont`. |
+| `typography` | `typeScale({ body: 28, title: 64, display: 84, kpi: 64 })`, exporté pour régler ta propre échelle. |
+| `chartPaletteId` | `pitch-harmony`. |
+| `dressings` | Un habillage « Standard » : numéro de page en bas à droite. Voir [Habillages](#habillages--en-tête-pied-numéro-et-décor). |
+
+`registerPresentationLayout` et `registerPresentationTheme` restent
+disponibles : ils ajoutent au registre sans toucher aux onglets ni à la liste.
+
+## Habillages : en-tête, pied, numéro et décor
+
+Un **habillage** est un calque d’objets (textes, formes, images, icônes,
+groupes) posé sur les slides qui le choisissent. En-tête, pied de page,
+numéro, logo, filigrane ou bandeau : tout ce qui se répète d’une slide à
+l’autre. Il remplace les anciens « repères » (en-tête, pied et numéro figés).
+
+- **Plusieurs habillages par deck**, nommés. Chaque slide choisit le sien
+  (onglet Slide, liste « Habillage ») : celui par défaut, un autre, ou aucun.
+  Un layout peut l’imposer (la couverture livrée n’en a pas).
+- **Édité comme une slide** : onglet Thème, section « Habillages », bouton
+  crayon. Le canevas montre alors l’habillage avec tous les outils ; le
+  panneau de gauche liste les variables ; « Terminer » ramène aux slides.
+  ⌘Z annule pendant l’édition.
+- **Devant ou derrière** : chaque objet a un plan (`plane`). « Derrière »
+  passe sous le contenu de la slide (bandeau, fond), « devant » au-dessus
+  (numéro, logo). Par défaut : devant.
+- **Variables** dans les textes, remplies slide par slide :
+
+| Variable | Valeur |
+|---|---|
+| `{page}` | Numéro de la slide, compté sur les slides visibles. |
+| `{total}` | Nombre de slides visibles. |
+| `{deck}` | Titre du deck. |
+| `{slide}` | Nom de la slide. |
+| `{date}` | Date du jour, en français (« 6 novembre 2026 »). |
+
+- **Dans le thème, copié au deck** : appliquer un thème pose ses habillages
+  sur le deck, qui peut ensuite les modifier. Une slide garde son choix si le
+  nouveau thème a un habillage de même id, sinon elle prend celui par défaut.
+- Sur une slide, les objets d’habillage ne se sélectionnent pas : ils ne se
+  modifient que dans leur propre édition. L’écran, le PDF et le PPTX les
+  dessinent de la même façon.
+
+Format (JSON, stocké dans le document et dans les thèmes) :
+
+```ts
+import type { PresentationDressing } from "bige-sliders";
+
+const standard: PresentationDressing = {
+  id: "standard",        // gardé d’un thème à l’autre
+  name: "Standard",
+  elements: [
+    { id: "rule", name: "Filet", type: "shape", shape: "rect", x: 64, y: 820, width: 1472, height: 2, fill: "accentSoft", source: "manual", plane: "back" },
+    { id: "deck", name: "Titre du deck", type: "text", text: "{deck}", x: 64, y: 836, width: 900, height: 30, fontSize: 16, color: "muted", source: "manual" },
+    { id: "page", name: "Numéro de page", type: "text", text: "{page} / {total}", x: 1336, y: 836, width: 200, height: 30, fontSize: 16, fontWeight: "bold", align: "right", color: "accent", source: "manual" },
+  ],
+  groups: [],            // facultatif, comme dans une slide
+};
+
+const acme = definePresentationTheme({ id: "acme", name: "Acme", tone: "dark", colors, dressings: [standard] });
+```
+
+Dans le document : `dressings` (la liste), `defaultDressing` (l’id de celui
+des slides qui n’en choisissent pas ; absent, le premier) et, sur chaque
+slide, `dressing` (un id, `null` pour aucun, absent pour celui par défaut).
+Les couleurs et polices passent par les jetons du thème, comme dans les
+slides. Une image d’habillage (logo) vit dans `assets` comme les autres.
+
+Pour le code : `documentDressings(deck)`, `dressingOfSlide(deck, slide)`,
+`dressingLayersFor(deck, slide)` (objets prêts à dessiner, variables
+remplies) et `PRESENTATION_DRESSING_VARIABLES`.
+
+Un deck enregistré avant la 0.4.0 garde son rendu : ses anciens repères
+(`chrome`) sont lus comme un habillage « Standard » équivalent et écrits en
+habillage à la première modification.
 
 ## Apparence de l’interface
 
@@ -348,8 +526,8 @@ expliquent chaque refus et rendent un document toujours modifiable à la main.
 | `editSlideElements(deck, slideId, operations, icons)` | De 1 à 24 opérations : `add_text`, `add_shape`, `add_icon`, `add_image`, `add_arrow`, `update`, `delete`, `group`, `arrange`. |
 | `composeOnSlide(deck, slideId, "steps" \| "cards" \| "flow", spec, icons)` | Compositions prêtes : étapes, cartes, flux. |
 | `checkSlideLayout(deck, slideId)` | Contrôle : hors slide, texte qui déborde, chevauchements, texte trop petit, contraste. |
-| `applyDeckOperations(deck, operations)`, `deckLayoutCatalog()` | Créer, remplir, déplacer, masquer ou supprimer des slides depuis les layouts. |
-| `editDeckTheme(deck, edit)`, `checkThemeContrast(deck)` | Thème et contraste. |
+| `applyDeckOperations(deck, operations)`, `deckLayoutCatalog()` | Créer, remplir, déplacer, masquer ou supprimer des slides depuis les layouts du [catalogue](#catalogue--layouts-onglets-et-thèmes). |
+| `editDeckTheme(deck, edit)`, `themeCatalog()`, `checkThemeContrast(deck)` | Thèmes du catalogue et contraste. |
 
 ```ts
 import { checkSlideLayout, describeSlide, editSlideElements } from "bige-sliders";

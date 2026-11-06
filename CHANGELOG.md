@@ -3,6 +3,33 @@
 Versions de `bige-sliders`, de la plus récente à la plus ancienne. En 0.x, un
 changement cassant fait monter le chiffre du milieu.
 
+## 0.4.0 · 2026-11-06
+
+- **Habillages** à la place des repères (changement cassant) : des calques
+  d’objets (textes, formes, images, icônes, groupes) édités sur le canevas
+  comme une slide, devant ou derrière le contenu, avec les variables
+  `{page}`, `{total}`, `{deck}`, `{slide}` et `{date}`. Plusieurs par deck,
+  choisis slide par slide (ou aucun) ; portés par les thèmes.
+- `definePresentationTheme` prend `dressings` ; `header`, `footer`,
+  `pageNumber` et `style` disparaissent. `PresentationThemePreset.chrome`
+  devient `dressings`.
+- Document : `dressings`, `defaultDressing`, `slide.dressing`. Les decks et
+  thèmes enregistrés avant gardent leur rendu (anciens repères convertis).
+- Galerie de compositions : le grand aperçu suit le layout sélectionné.
+
+## 0.3.0 · 2026-11-06
+
+- Catalogue réglable au démarrage (`configurePresentationCatalog`) : layouts
+  de l’app, onglets de la galerie et leur ordre, thèmes proposés et thème des
+  nouveaux decks. Sans réglage, rien ne change.
+- L’agent suit le même catalogue : `deckLayoutCatalog`, `applyDeckOperations`,
+  `themeCatalog` et `editDeckTheme` ne proposent que ce que la galerie montre.
+- `definePresentationTheme` : un thème complet à partir d’un id, d’un nom,
+  d’un ton et de six couleurs ; `typeScale` exporté.
+- Le deck de départ de l’hôte utilise le premier layout du premier onglet.
+- README : section « Catalogue », tableaux des champs d’un layout et d’un
+  thème. Démo : un layout et un thème maison, des onglets réorganisés.
+
 ## 0.2.0 · 2026-11-04
 
 - Calques : les groupes s’affichent en blocs, avec leur menu (sélectionner le
