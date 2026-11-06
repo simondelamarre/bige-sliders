@@ -3,6 +3,22 @@
 Versions de `bige-sliders`, de la plus récente à la plus ancienne. En 0.x, un
 changement cassant fait monter le chiffre du milieu.
 
+## 0.6.0 · 2026-11-06
+
+- **`PresentationSlideThumbnail`** (`bige-sliders/vue`) : vignette 16:9
+  légère d’un layout enregistré, d’une slide de deck ou d’un layout du
+  catalogue.
+- **`PresentationSlideEditor`** : éditeur d’une seule slide (outils et
+  inspecteur, sans liste de slides, exports ni thème), `v-model` sur un layout
+  enregistré. `PresentationWorkspace` accepte `variant="slide"`.
+- `presentationLayoutSetup()` et `removeLayoutTemplate(id)` pour les pages de
+  gestion de galerie.
+- Zoom : au-delà de la vue, la slide se faisait couper à gauche et en haut
+  sans défilement possible ; chaque bord reste atteignable et la vue garde son
+  centre pendant le zoom.
+- Démo : page « Mes layouts » (vignettes, édition d’un favori seul,
+  suppression) ; README : section « Vignettes et édition d’une slide ».
+
 ## 0.5.0 · 2026-11-06
 
 - **Favoris de slides** : menu ⋯ d’une slide → « Enregistrer comme layout »

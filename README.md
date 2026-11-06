@@ -23,6 +23,7 @@ des favoris de slides, et une API JSON qu’un agent peut piloter.</p>
 | **Ton catalogue** | Tes layouts, tes onglets de galerie, tes thèmes et ton thème par défaut, réglés au démarrage. |
 | **Des habillages** | En-tête, pied, numéro, logo : un calque édité comme une slide, avec `{page}`, `{total}`, `{deck}`… |
 | **Des favoris** | « Enregistrer comme layout » sur une slide : tu reçois `@bookmark`, tu stockes, tu renvoies au chargement. |
+| **Des briques à part** | Une vignette légère et un éditeur d’une seule slide, pour gérer tes galeries de layouts hors de l’éditeur complet. |
 | **Compatible agents** | Tout ce que fait l’interface, un agent (LLM) le fait en opérations JSON, sans Vue ni navigateur. |
 | **Ton stockage** | Enregistrement, images (S3…), exports et préférences passent par un hôte que tu fournis. |
 
@@ -37,7 +38,7 @@ des favoris de slides, et une API JSON qu’un agent peut piloter.</p>
   </tr>
 </table>
 
-> Version 0.5 : l’API peut encore bouger avant la 1.0. Les changements sont
+> Version 0.6 : l’API peut encore bouger avant la 1.0. Les changements sont
 > listés dans le [CHANGELOG](https://github.com/simondelamarre/bige-sliders/blob/main/CHANGELOG.md).
 
 Un outil simple pour des cas simples : faire des slides propres dans une
@@ -55,6 +56,7 @@ webapp et les sortir en PDF ou en PowerPoint, sans réinventer la roue.
 - [Catalogue : layouts, onglets et thèmes](#catalogue--layouts-onglets-et-thèmes)
 - [Habillages : en-tête, pied, numéro et décor](#habillages--en-tête-pied-numéro-et-décor)
 - [Favoris et thèmes personnels : `@bookmark`, `@theme-save`](#favoris-et-thèmes-personnels--bookmark-theme-save)
+- [Vignettes et édition d’une slide](#vignettes-et-édition-dune-slide)
 - [Apparence de l’interface](#apparence-de-linterface)
 - [Chargement à la demande, Nuxt](#chargement-à-la-demande-nuxt)
 - [Compatible agents](#compatible-agents)
@@ -552,7 +554,74 @@ Un layout enregistré (`PresentationLayoutTemplate`) est du JSON :
 | `savedAt` | Date d’enregistrement (ISO). |
 
 Par code : `layoutTemplateFromSlide(deck, slide, meta)`, `layoutFromTemplate(template)`,
-`saveLayoutTemplate(template, tab)` et `savedPresentationLayouts()`.
+`saveLayoutTemplate(template, tab)`, `savedPresentationLayouts()`,
+`presentationLayoutSetup()` et `removeLayoutTemplate(id)`.
+
+## Vignettes et édition d’une slide
+
+Deux composants pour bâtir ta propre page de gestion des layouts (favoris,
+gabarits d’équipe), hors de l’éditeur complet :
+
+<p align="center"><img src="https://raw.githubusercontent.com/simondelamarre/bige-sliders/main/assets/manager.png" alt="Page « Mes layouts » de la démo : vignettes des favoris par onglet et éditeur d’une seule slide" width="900" /></p>
+
+**`PresentationSlideThumbnail`** : une vignette 16:9 légère (SVG, sans
+canevas), dont la largeur suit son conteneur.
+
+| Prop | Rôle |
+|---|---|
+| `template` | Un layout enregistré (`PresentationLayoutTemplate`), avec ses images. |
+| `document` + `slide` | Une slide d’un deck, avec son habillage. |
+| `layout` | Un layout du catalogue, par son id. |
+| `document` | Thème (couleurs, polices) de l’aperçu ; sans, le thème par défaut du catalogue. |
+
+**`PresentationSlideEditor`** : l’éditeur d’une seule slide (canevas,
+outils, inspecteur Objet et Slide), sans liste de slides, lecture, exports ni
+onglet Thème. `v-model` est le layout enregistré : chaque modification émet
+le layout à jour (même id, même onglet).
+
+| Prop | Rôle |
+|---|---|
+| `v-model` (`modelValue`) | Le `PresentationLayoutTemplate` édité. |
+| `document` | Thème et habillages de l’édition ; sans, ceux par défaut du catalogue. |
+| `host`, `appearance` | Comme pour `PresentationWorkspace`. |
+
+```vue
+<script setup lang="ts">
+import { ref } from "vue";
+import { removeLayoutTemplate, saveLayoutTemplate, savedPresentationLayouts, type PresentationLayoutTemplate } from "bige-sliders";
+import { PresentationSlideEditor, PresentationSlideThumbnail } from "bige-sliders/vue";
+
+const templates = ref(savedPresentationLayouts());
+const selected = ref<PresentationLayoutTemplate | null>(templates.value[0] ?? null);
+
+function update(template: PresentationLayoutTemplate) {
+  const { layouts } = saveLayoutTemplate(template, template.category); // à stocker
+  templates.value = savedPresentationLayouts();
+}
+function remove(id: string) {
+  const layouts = removeLayoutTemplate(id); // à stocker
+  templates.value = savedPresentationLayouts();
+}
+</script>
+
+<template>
+  <ul>
+    <li v-for="template in templates" :key="template.id" @click="selected = template">
+      <PresentationSlideThumbnail :template="template" />
+      {{ template.name }} <button @click.stop="remove(template.id)">Supprimer</button>
+    </li>
+  </ul>
+  <div style="height: 640px">
+    <PresentationSlideEditor v-if="selected" :model-value="selected" @update:model-value="update" />
+  </div>
+</template>
+```
+
+Pour organiser : `presentationLayoutSetup()` rend le réglage `layouts` en
+cours (`templates` et `tabs`, sérialisable). Réordonne les onglets ou leurs
+layouts, déplace un favori (`saveLayoutTemplate(template, autreOnglet)`), puis
+renvoie le tout à `configurePresentationCatalog` et stocke-le. La démo en fait
+une page complète : [`demo/src/LayoutManager.vue`](https://github.com/simondelamarre/bige-sliders/blob/main/demo/src/LayoutManager.vue).
 
 ## Apparence de l’interface
 
@@ -664,7 +733,7 @@ sans `position`, la slide est ajoutée à la fin.
 | Import | Contenu |
 |---|---|
 | `bige-sliders` | Document et types, commandes pour agents et pour le code (voir [Compatible agents](#compatible-agents)), layouts et thèmes, contrat hôte, enregistrement différé (`PresentationAutosave`). Sans Vue, utilisable dans Node. |
-| `bige-sliders/vue` | `PresentationWorkspace`, `renderSlideSnapshot`, `providePresentationHost`. |
+| `bige-sliders/vue` | `PresentationWorkspace`, `PresentationSlideEditor`, `PresentationSlideThumbnail`, `renderSlideSnapshot`, `providePresentationHost`. |
 | `bige-sliders/style.css` | Styles de l’éditeur, limités à ses conteneurs (`.deck-ui`), en clair ou en sombre. |
 
 Le package est livré en modules ES, avec ses types TypeScript.
