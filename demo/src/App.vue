@@ -5,6 +5,7 @@ import { PresentationWorkspace } from "bige-sliders/vue";
 import "bige-sliders/style.css";
 import { runAgentExample } from "./agentExample";
 import { forgetSaved, storeBookmark, storeThemes } from "./catalog";
+import { demoImageLibrary } from "./imageSource";
 import LayoutManager from "./LayoutManager.vue";
 
 /**
@@ -35,6 +36,8 @@ const host = definePresentationHost({
   // Appelé après chaque modification (différé) et par ⌘S, avec le document à enregistrer.
   save: async (document) => localStorage.setItem(STORAGE_KEY, JSON.stringify(document)),
   metadata: { author: "Démo bige-sliders" },
+  // Un onglet « Banque d’images » dans la galerie ; `createHttpImageSource` branche ton API.
+  images: demoImageLibrary,
 });
 
 // `host` et `appearance` sont lus au montage : changer la clé remonte l’éditeur.
