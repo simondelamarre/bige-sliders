@@ -25,6 +25,7 @@ des favoris de slides, et une API JSON qu’un agent peut piloter.</p>
 | **Des favoris** | « Enregistrer comme layout » sur une slide : tu reçois `@bookmark`, tu stockes, tu renvoies au chargement. |
 | **Des briques à part** | Une vignette légère et un éditeur d’une seule slide, pour gérer tes galeries de layouts hors de l’éditeur complet. |
 | **Compatible agents** | Tout ce que fait l’interface, un agent (LLM) le fait en opérations JSON, sans Vue ni navigateur. |
+| **Ta bibliothèque d’images** | Tes images dans la galerie (`host.images`) : recherche, filtres, pose d’un clic, sans rien ré-envoyer. |
 | **Ton stockage** | Enregistrement, images (S3…), exports et préférences passent par un hôte que tu fournis. |
 
 <table>
@@ -150,6 +151,7 @@ l’éditeur (`:key`).
 | `save-state` | `PresentationSaveState` | Avec un `save` fourni : `pending`, `saving`, `saved` (avec `at`), `error` (avec `message`). L’éditeur l’affiche déjà ; l’événement sert si tu veux l’afficher ailleurs. |
 | `bookmark` | `PresentationBookmark` | Une slide enregistrée comme layout (menu ⋯ de la slide). Voir [Favoris](#favoris-et-thèmes-personnels--bookmark-theme-save). |
 | `theme-save` | `PresentationThemeSave` | Un thème personnel créé, modifié ou supprimé. |
+| `fullscreen-change` | `"edit" \| "play" \| null` | Plein écran d’édition, lecture, ou retour à la page : adapte ton interface. La racine porte aussi `data-deck-fullscreen`. |
 
 ### Méthode exposée
 
@@ -185,14 +187,15 @@ que tu fournis. Tu ne passes que ce que tu changes.
 | `saveExport` | `(bytes, filename, kind: "pdf" \| "pptx") => Promise<string \| null>` | téléchargement | Reçoit les octets d’un export. Renvoie l’emplacement à afficher, ou `null` si l’utilisateur annule. |
 | `storage` | `{ getItem(key), setItem(key, value) }` | `localStorage`, préfixe `presentation-editor.` | Préférences de l’utilisateur : couleurs récentes, dégradés et thèmes enregistrés, tailles des panneaux. |
 | `assets` | `{ upload(file, info), resolve?(asset) }` | aucun | Magasin d’images. Sans lui, une image importée reste dans le document en base64 ; avec lui, le document ne garde que son URL et sa clé. |
-| `icons` | `PresentationIconProvider \| null` | Iconify (API publique) | Recherche d’icônes de la galerie. `null` retire la recherche en ligne. |
+| `icons` | `PresentationIconProvider \| null` | Iconify (API publique) | Recherche d’icônes de la galerie. `null` retire la recherche en ligne ; `createIconifyIconProvider({ hosts })` branche ta propre API Iconify. Voir [Icônes : Iconify](#icônes--iconify). |
+| `images` | `PresentationImageLibrary` | aucun | Tes images dans la galerie : un onglet par source, sans ré-upload. Voir [`host.images`](#ta-bibliothèque-dimages--hostimages). |
 | `readSystemFont` | `(file: string) => Promise<Uint8Array>` | aucun | Lit une police installée sur le poste pour l’embarquer dans le PDF (app desktop, Electron, Tauri). |
 | `metadata` | `{ author?, company? }` | `{}` | Inscrit dans les fichiers PDF et PPTX exportés. |
 | `starterDeck` | `{ label, hint, create(title) }` | une slide de couverture | Proposé quand le deck est vide. |
 
 Les types sont exportés : `PresentationHost`, `PresentationSave`,
 `PresentationAssetStore`, `PresentationIconProvider`, `PresentationStorage`,
-`PresentationStarterDeck`.
+`PresentationStarterDeck`, `PresentationImageLibrary`, `PresentationImageSource`.
 
 ## Exemples d’hôte
 
@@ -279,6 +282,127 @@ const host = definePresentationHost({
   },
 });
 ```
+
+### Icônes : Iconify
+
+La recherche d’icônes utilise l’API publique et gratuite d’Iconify. Elle est
+**limitée** (anti-abus, sans chiffre publié) : elle est faite pour charger
+des icônes à la demande. L’éditeur la ménage et tient bon quand elle sature :
+
+- 24 résultats par recherche, et **leurs aperçus arrivent en une requête par
+  jeu d’icônes** (données JSON), au lieu d’une requête par icône ;
+- délai maximal de 8 s, un nouvel essai, puis les serveurs publics de
+  secours (`ICONIFY_PUBLIC_HOSTS`) quand l’un est limité (429), en panne ou
+  injoignable ;
+- un message clair si tout échoue (limite atteinte, ou réseau) ; une icône
+  déjà choisie reste dans le document et ne dépend plus d’Iconify.
+
+Pour une app très utilisée, héberge ta propre API Iconify
+([doc](https://iconify.design/docs/api/hosting.html)) et passe-la à l’hôte :
+
+```ts
+import { createIconifyIconProvider, definePresentationHost } from "bige-sliders";
+
+const host = definePresentationHost({
+  // Ton API d’abord, puis les serveurs publics en secours (ou rien que la tienne).
+  icons: createIconifyIconProvider({ hosts: ["https://icons.example.com", "https://api.iconify.design"], limit: 32 }),
+});
+```
+
+### Ta bibliothèque d’images : `host.images`
+
+Par défaut, la galerie montre les images du deck. Avec `host.images`, elle
+gagne un onglet par source : tes images se cherchent, se filtrent et se posent
+sur la slide d’un clic ou d’un glisser-déposer (avec une image sélectionnée,
+le clic la remplace). **Rien n’est copié ni ré-envoyé** : l’image garde son
+adresse et sa clé, dans une slide enregistrée comme layout comme à la copie
+vers un autre deck, et s’exporte en PDF et PPTX.
+
+Le plus court : une API au format ci-dessous et `createHttpImageSource`.
+
+```ts
+import { createHttpImageSource, definePresentationHost } from "bige-sliders";
+
+const host = definePresentationHost({
+  images: {
+    sources: [
+      createHttpImageSource({
+        id: "medias",
+        label: "Mes médias",
+        url: "https://api.example.com/images",
+        headers: async () => ({ Authorization: `Bearer ${await getToken()}` }),
+        filters: [{ id: "type", label: "Type", options: [{ value: "photo", label: "Photos" }, { value: "logo", label: "Logos" }] }],
+      }),
+    ],
+    // Facultatif : ajoute « Enregistrer dans la bibliothèque » aux images du deck.
+    save: async (asset) => ({ sourceId: "medias", itemId: await saveImage(asset) }),
+  },
+});
+```
+
+L’éditeur appelle `GET {url}?q=<texte>&page=<n>&size=<n>&<filtre>=<valeur>`.
+`page` commence à 1 ; un filtre sur « Tous » n’est pas envoyé. Réponse attendue :
+
+```json
+{
+  "items": [
+    {
+      "id": "img-42",
+      "name": "Bureau",
+      "thumbnailUrl": "https://cdn.example.com/thumbs/bureau.jpg",
+      "src": "https://cdn.example.com/bureau.jpg",
+      "key": "images/bureau.jpg",
+      "mimeType": "image/jpeg",
+      "alt": "Un bureau baigné de lumière",
+      "width": 1600,
+      "height": 900,
+      "credit": "Studio Nord"
+    }
+  ],
+  "hasMore": true
+}
+```
+
+| Champ | Requis | Rôle |
+|---|---|---|
+| `id`, `name` | oui | Identifiant dans la source, nom affiché. |
+| `thumbnailUrl` | oui | Vignette de la galerie, pour l’affichage seulement. |
+| `src` | oui | L’image posée. Elle doit autoriser le GET CORS depuis ton app : le canevas et les exports la relisent. |
+| `key` | non | Clé de ton magasin : l’URL est redemandée à `host.assets.resolve` à chaque chargement (URL signées). |
+| `mimeType` | non | Déduit de l’extension de `src` sinon. |
+| `alt`, `width`, `height`, `credit` | non | Texte alternatif, proportions à la pose, origine affichée sous l’image. |
+
+`createHttpImageSource` prend aussi `pageSize` et `credentials`. `map` convertit
+une réponse d’une autre forme :
+
+```ts
+createHttpImageSource({
+  id: "medias",
+  label: "Mes médias",
+  url: "https://api.example.com/search",
+  map: (payload) => {
+    const { results, next } = payload as { results: { uuid: string; title: string; thumb: string; url: string }[]; next: string | null };
+    return {
+      items: results.map((item) => ({ id: item.uuid, name: item.title, thumbnailUrl: item.thumb, src: item.url })),
+      hasMore: next !== null,
+    };
+  },
+});
+```
+
+Une source qui ne passe pas par HTTP implémente `PresentationImageSource` :
+`search({ text, page, pageSize, filters }, signal)` rend `{ items, hasMore }`,
+`resolve(item)` rend `{ src, key?, mimeType, width?, height? }`. Annule ta
+requête sur `signal` : une nouvelle recherche remplace la précédente.
+
+- `save(asset)` n’est appelé que sur le geste de l’utilisateur. Renvoie
+  `{ sourceId, itemId }`, ou `null` s’il annule. Sans `save`, le bouton
+  n’apparaît pas.
+- `labels` remplace les textes de la galerie pour une autre langue :
+  `labels: { deckTab: "This deck", search: "Search images…", retry: "Retry" }`
+  (voir `PresentationImageLibraryLabels`).
+- Sans `host.images`, la galerie reste celle du deck. Le package n’appelle
+  rien d’autre que ce que tu configures ici.
 
 ## Le document
 
@@ -376,12 +500,30 @@ configurePresentationCatalog({
 });
 ```
 
+Pour ne proposer **que tes layouts**, sans les 17 livrés :
+
+```ts
+configurePresentationCatalog({
+  layouts: {
+    includeBuiltIn: false,
+    definitions: [highlight],   // tes layouts en code
+    templates: savedTemplates,  // tes favoris, reçus par @bookmark
+  },
+});
+```
+
 Règles :
 
+- **`layouts.includeBuiltIn`** (`true` par défaut) : à `false`, seuls tes layouts
+  sont proposés, dans la galerie, à l’ajout de slide et à l’agent. Sans `tabs`,
+  ils sont rangés par `category`. Un layout livré cité dans `tabs` (un réglage
+  déjà enregistré, par exemple) est ignoré. Un id livré que tu remplaces dans
+  `definitions` compte comme le tien. Les slides déjà créées depuis un layout
+  livré restent intactes. Sans aucun layout, la galerie propose une slide vierge.
 - **`layouts.tabs`** décide de tout : les onglets de la galerie, leur ordre,
   l’ordre des layouts. Un layout livré n’apparaît que si tu le cites. Sans
   `tabs`, les quatre onglets livrés restent et tes layouts s’ajoutent après,
-  regroupés par `category`.
+  regroupés par `category` (sauf avec `includeBuiltIn: false`).
 - **`themes.list`** donne les thèmes proposés et leur ordre (livrés ou à toi).
   Sans liste : ceux livrés, puis les tiens. Les thèmes que l’utilisateur crée
   dans l’éditeur s’ajoutent toujours à la galerie.
@@ -512,7 +654,7 @@ se range (compte, base, fichier…) et tu le renvoies au chargement.
 
 | Événement | Charge |
 |---|---|
-| `bookmark` | `{ action: "create" \| "update", template, tab, layouts: { templates, tabs } }` : `layouts` est le réglage complet après l’enregistrement, à renvoyer tel quel. |
+| `bookmark` | `{ action: "create" \| "update", template, tab, layouts: { templates, tabs, includeBuiltIn? } }` : `layouts` est le réglage complet après l’enregistrement, à renvoyer tel quel. |
 | `theme-save` | `{ action: "create" \| "update" \| "remove", theme, themes }` : `themes` est la liste complète des thèmes personnels. |
 
 ```vue
@@ -649,6 +791,26 @@ Variables disponibles : `--deck-base`, `--deck-panel`, `--deck-raised`,
 Les couleurs des **slides** ne viennent pas de là : elles suivent le thème du
 deck, réglable dans l’éditeur (onglet Thème) ou par code (`editDeckTheme`).
 
+### Au-dessus de ton app
+
+La lecture passe en plein écran du navigateur, au-dessus de toute la page.
+Le plein écran d’édition, les fenêtres, les popovers et les menus
+contextuels sont posés dans `body` sur une base unique, `--deck-layer`
+(1000 par défaut), dans cet ordre : plein écran, lecture (+10), fenêtres
+(+20), popovers (+40), menus (+50). Si ta barre d’app est plus haute :
+
+```css
+:root { --deck-layer: 5000; }
+```
+
+### Zone de travail
+
+En édition, la slide est posée sur une zone de travail : l’objet sélectionné
+garde ses poignées (taille, rotation, points de tracé) saisissables même hors
+du cadre, tandis que ce qui dépasse reste coupé au bord de la slide. Dézoomer
+agrandit la zone ; « Ajuster à la sélection » (menu de zoom) cadre l’objet,
+et la slide autour quand il dépasse. La lecture et les aperçus n’en ont pas.
+
 ## Chargement à la demande, Nuxt
 
 L’éditeur embarque Fabric, pdf-lib et PptxGenJS (environ 900 Ko minifiés,
@@ -724,6 +886,10 @@ sans `position`, la slide est ajoutée à la fin.
 | Flèches (⇧ : 10 px) | Déplacer la sélection |
 | Maj pendant un déplacement | Garder l’axe |
 | ⌘ pendant un déplacement | Sans magnétisme |
+| Maj pendant une rotation | Pivoter par pas de 15° |
+| ⌥ ← / ⌥ → (⇧ : 1°) | Pivoter de 15° |
+| ⌘ + molette | Zoomer |
+| ? | Afficher l’aide des raccourcis dans l’éditeur |
 | P, V | Plume (reprend le tracé sélectionné), retour à la sélection |
 | Suppr | Supprimer la sélection |
 | Échap | Quitter la plume, un groupe ouvert, le plein écran ou la sélection |

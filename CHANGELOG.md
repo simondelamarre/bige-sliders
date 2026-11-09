@@ -3,6 +3,48 @@
 Versions de `bige-sliders`, de la plus récente à la plus ancienne. En 0.x, un
 changement cassant fait monter le chiffre du milieu.
 
+## 0.7.0 · 2026-11-09
+
+- **`layouts.includeBuiltIn: false`** : le catalogue ne propose que tes layouts,
+  sans les 17 livrés, dans la galerie comme à l’agent. Les slides existantes
+  restent intactes ; sans aucun layout, la galerie propose une slide vierge.
+- **Ta bibliothèque d’images dans la galerie** (`host.images`) : un onglet par
+  source à côté de « Ce deck », recherche, filtres, défilement infini, un clic
+  pose l’image, un glisser-déposer la pose à l’endroit voulu, une image
+  sélectionnée est remplacée. Rien n’est ré-envoyé : la clé et l’origine
+  suivent l’image dans les layouts enregistrés et à la copie entre decks. Sans
+  `host.images`, rien ne change.
+- `createHttpImageSource` pour une API au format documenté (ou `map` pour une
+  autre forme) ; `host.images.save` ajoute « Enregistrer dans la bibliothèque ».
+- **Centrer** horizontalement et verticalement une sélection, ou un objet seul
+  sur la slide, à côté des alignements sur les bords.
+- **Styles communs d’une sélection** : police, niveau, taille, alignement,
+  gras, italique et souligné pour tous les textes ; bordure, épaisseur,
+  arrondi, ajustement et ombre pour les formes, tracés et images. Seuls les
+  réglages des objets choisis s’affichent, « Mixte » quand ils diffèrent.
+- PPTX : une image `data:` en clair (SVG encodé) disparaissait du fichier ; elle
+  y est.
+- **Au-dessus de l’app hôte** : la lecture passe en plein écran du
+  navigateur ; plein écran d’édition, fenêtres, popovers et menus sur une
+  base unique `--deck-layer` (1000 par défaut, au-dessus d’une barre à 999) ;
+  événement `fullscreen-change` et attribut `data-deck-fullscreen`.
+- **Zone de travail** autour de la slide en édition : les poignées de l’objet
+  sélectionné (taille, rotation, points de tracé) restent saisissables hors
+  du cadre, le contenu qui dépasse reste coupé ; « Ajuster à la sélection »
+  dans le menu de zoom.
+  Quand l’app hôte a des barres de défilement qui prennent de la place
+  (`::-webkit-scrollbar`), la slide ne se redimensionne plus en boucle à
+  chaque image.
+- **Rotations** : Maj pendant une rotation à la souris tourne par pas de 15° ;
+  ⌥ + ← / → pivote de 15° (1° avec Maj). Touche `?` : aide des raccourcis.
+- **Icônes Iconify plus robustes** : délai maximal, nouvel essai, serveurs
+  publics de secours, messages clairs (limite atteinte ou réseau) ; aperçus
+  d’une recherche en une requête par jeu d’icônes, 24 résultats au lieu
+  de 48 ; icônes construites depuis les données JSON d’Iconify.
+- `createIconifyIconProvider({ hosts, limit })` pour brancher ta propre API
+  Iconify ; `ICONIFY_PUBLIC_HOSTS` ; `previews` facultatif sur
+  `PresentationIconProvider`.
+
 ## 0.6.0 · 2026-11-06
 
 - **`PresentationSlideThumbnail`** (`bige-sliders/vue`) : vignette 16:9
