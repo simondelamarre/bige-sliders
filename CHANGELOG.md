@@ -3,6 +3,18 @@
 Versions de `bige-sliders`, de la plus récente à la plus ancienne. En 0.x, un
 changement cassant fait monter le chiffre du milieu.
 
+## 0.7.1 · 2026-11-12
+
+- Les raccourcis globaux de l’éditeur (Suppr, flèches, copier-coller, annuler,
+  enregistrer…) n’agissent plus sur un deck quand un autre panneau de
+  l’application hôte est actif.
+- Nouveau plugin Obsidian desktop distribué hors catalogue officiel : fichiers
+  `*.bige-slides` dans le vault, enregistrement automatique, images dans les
+  pièces jointes et exports PDF/PPTX à côté du deck.
+- Le build Obsidian embarque désormais la feuille Tailwind et le reset isolé de
+  `bige-sliders`, et refuse une installation si les classes de structure sont
+  absentes.
+
 ## 0.7.0 · 2026-11-09
 
 - **`layouts.includeBuiltIn: false`** : le catalogue ne propose que tes layouts,

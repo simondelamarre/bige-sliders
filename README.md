@@ -39,7 +39,7 @@ des favoris de slides, et une API JSON qu’un agent peut piloter.</p>
   </tr>
 </table>
 
-> Version 0.6 : l’API peut encore bouger avant la 1.0. Les changements sont
+> Version 0.7 : l’API peut encore bouger avant la 1.0. Les changements sont
 > listés dans le [CHANGELOG](https://github.com/simondelamarre/bige-sliders/blob/main/CHANGELOG.md).
 
 Un outil simple pour des cas simples : faire des slides propres dans une
@@ -49,6 +49,7 @@ webapp et les sortir en PDF ou en PowerPoint, sans réinventer la roue.
 
 - [Démo](#démo)
 - [Installation](#installation)
+- [Obsidian hors catalogue officiel](#obsidian-hors-catalogue-officiel)
 - [Démarrage rapide](#démarrage-rapide)
 - [Le composant `PresentationWorkspace`](#le-composant-presentationworkspace)
 - [L’hôte : `definePresentationHost`](#lhôte--definepresentationhost)
@@ -89,6 +90,30 @@ npm install bige-sliders vue
 Vue 3.5 ou plus est requis (dépendance pair). Fabric, pdf-lib, PptxGenJS et la
 police Inter sont installés avec le package : rien d’autre à configurer, ni
 Tailwind ni plugin Vite.
+
+## Obsidian hors catalogue officiel
+
+Le plugin desktop est distribué depuis les
+[GitHub Releases](https://github.com/simondelamarre/bige-sliders/releases), sans
+passer par le catalogue officiel Obsidian.
+
+### Installation et mises à jour avec BRAT
+
+1. Dans **Réglages → Modules complémentaires**, installe et active **BRAT**.
+2. Ouvre les réglages de BRAT, choisis **Add Beta plugin**.
+3. Colle `simondelamarre/bige-sliders`, puis choisis la dernière version.
+4. Active **bige-sliders** dans les modules complémentaires installés.
+
+BRAT récupère ensuite les nouvelles GitHub Releases. Le plugin crée des fichiers
+`*.bige-slides` dans le vault ; les images suivent le dossier de pièces jointes
+Obsidian et les exports PDF/PPTX sont écrits à côté du deck.
+
+### Installation manuelle
+
+Télécharge `main.js`, `manifest.json` et `styles.css` depuis une release, place
+les trois fichiers dans `.obsidian/plugins/bige-sliders/`, recharge Obsidian,
+puis active **bige-sliders**. Le plugin est desktop uniquement. La galerie
+d’icônes utilise l’API publique Iconify ; l’icône choisie est intégrée au deck.
 
 ## Démarrage rapide
 
