@@ -31,6 +31,9 @@ des favoris de slides, et une API JSON qu’un agent peut piloter.</p>
 Le repo fournit le skill installable
 [bige-sliders](skills/bige-sliders/SKILL.md) pour apprendre aux agents à
 créer, modifier, contrôler et exporter des présentations avec les bonnes API.
+Pour une application hôte, suivre la
+[documentation technique d’intégration](docs/INTEGRATION.md) : composants Vue,
+catalogue, stockage, assets privés, exports, SSR et recette du tarball.
 
 <table>
   <tr>

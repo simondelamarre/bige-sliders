@@ -3,6 +3,15 @@
 Versions de `bige-sliders`, de la plus récente à la plus ancienne. En 0.x, un
 changement cassant fait monter le chiffre du milieu.
 
+## 0.8.1 · 2026-11-13
+
+- Documentation publique : un seul skill d’usage, désormais complet sur les
+  parcours Obsidian, les commandes d’agent, les modèles, habillages, thèmes,
+  assets, diagnostics, exports et options visuelles.
+- Ajout d’une documentation technique dédiée à l’intégration Vue et au contrat
+  hôte, plus un outil `inspect`/`create`/`validate` pour les decks du vault.
+- La procédure interne de publication n’est plus distribuée publiquement.
+
 ## 0.8.0 · 2026-11-13
 
 - Textes : contour (couleur et épaisseur) et ombre dans l’éditeur, le PDF et

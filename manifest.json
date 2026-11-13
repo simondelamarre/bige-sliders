@@ -1,7 +1,7 @@
 {
   "id": "bige-sliders",
   "name": "bige-sliders",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "minAppVersion": "1.5.0",
   "description": "Crée, édite et exporte des présentations bige-sliders directement dans ton vault.",
   "author": "Simon Delamarre",
