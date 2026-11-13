@@ -28,10 +28,9 @@ des favoris de slides, et une API JSON qu’un agent peut piloter.</p>
 | **Ta bibliothèque d’images** | Tes images dans la galerie (`host.images`) : recherche, filtres, pose d’un clic, sans rien ré-envoyer. |
 | **Ton stockage** | Enregistrement, images (S3…), exports et préférences passent par un hôte que tu fournis. |
 
-Le repo fournit deux skills installables :
-[bige-sliders](skills/bige-sliders/SKILL.md) pour choisir la bonne API et
-[bige-sliders-release](skills/bige-sliders-release/SKILL.md) pour coordonner
-npm, la release Obsidian et GitHub Pages.
+Le repo fournit le skill installable
+[bige-sliders](skills/bige-sliders/SKILL.md) pour apprendre aux agents à
+créer, modifier, contrôler et exporter des présentations avec les bonnes API.
 
 <table>
   <tr>
