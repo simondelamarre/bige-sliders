@@ -28,6 +28,11 @@ des favoris de slides, et une API JSON qu’un agent peut piloter.</p>
 | **Ta bibliothèque d’images** | Tes images dans la galerie (`host.images`) : recherche, filtres, pose d’un clic, sans rien ré-envoyer. |
 | **Ton stockage** | Enregistrement, images (S3…), exports et préférences passent par un hôte que tu fournis. |
 
+Le repo fournit deux skills installables :
+[bige-sliders](skills/bige-sliders/SKILL.md) pour choisir la bonne API et
+[bige-sliders-release](skills/bige-sliders-release/SKILL.md) pour coordonner
+npm, la release Obsidian et GitHub Pages.
+
 <table>
   <tr>
     <td width="50%"><img src="https://raw.githubusercontent.com/simondelamarre/bige-sliders/main/assets/gallery.png" alt="Galerie de compositions avec les onglets et le layout de l’app" /></td>
@@ -39,7 +44,7 @@ des favoris de slides, et une API JSON qu’un agent peut piloter.</p>
   </tr>
 </table>
 
-> Version 0.7 : l’API peut encore bouger avant la 1.0. Les changements sont
+> Version 0.8 : l’API peut encore bouger avant la 1.0. Les changements sont
 > listés dans le [CHANGELOG](https://github.com/simondelamarre/bige-sliders/blob/main/CHANGELOG.md).
 
 Un outil simple pour des cas simples : faire des slides propres dans une
@@ -57,6 +62,7 @@ webapp et les sortir en PDF ou en PowerPoint, sans réinventer la roue.
 - [Le document](#le-document)
 - [Catalogue : layouts, onglets et thèmes](#catalogue--layouts-onglets-et-thèmes)
 - [Habillages : en-tête, pied, numéro et décor](#habillages--en-tête-pied-numéro-et-décor)
+- [API d’intégration : habillage, modèles et diagnostic](#api-dintégration--habillage-modèles-et-diagnostic)
 - [Favoris et thèmes personnels : `@bookmark`, `@theme-save`](#favoris-et-thèmes-personnels--bookmark-theme-save)
 - [Vignettes et édition d’une slide](#vignettes-et-édition-dune-slide)
 - [Apparence de l’interface](#apparence-de-linterface)
@@ -662,6 +668,112 @@ Un deck enregistré avant la 0.4.0 garde son rendu : ses anciens repères
 (`chrome`) sont lus comme un habillage « Standard » équivalent et écrits en
 habillage à la première modification.
 
+## API d’intégration : habillage, modèles et diagnostic
+
+Ces API ne connaissent ni stockage, ni compte, ni métier : l’application hôte
+fournit les documents et persiste les valeurs émises.
+
+### Éditer un habillage hors du deck
+
+`PresentationDressingEditor` réutilise le canevas, les calques, groupes,
+assets, plans avant/arrière et le sélecteur `{page}`, `{total}`, `{deck}`,
+`{slide}`, `{date}`. Son `v-model` ne contient que l’habillage ; le document de
+référence apporte thème, dimensions et assets.
+
+```vue
+<script setup lang="ts">
+import { ref } from "vue";
+import type { PresentationDocument, PresentationDressing } from "bige-sliders";
+import { PresentationDressingEditor } from "bige-sliders/vue";
+
+const dressing = ref<PresentationDressing>(loadedDressing);
+const reference = ref<PresentationDocument>(loadedDeck);
+</script>
+
+<template>
+  <div style="height: 700px">
+    <PresentationDressingEditor
+      v-model="dressing"
+      v-model:reference-document="reference"
+      :host="host"
+      appearance="light"
+    />
+  </div>
+</template>
+```
+
+`update:referenceDocument` n’est émis que si les assets changent. Les ids,
+groupes, `groupId`, `plane` et `assetId` sont conservés à la sauvegarde.
+
+### Champs de modèle nommés
+
+Un objet texte ou image porte facultativement `field` : `key` stable, `kind`
+(`text`, `list`, `image`), `label`, `instruction`, `required`, `separator` et
+`hideWhenEmpty`. Le remplissage remplace uniquement le contenu : boîte,
+position, groupe, style, `fit`, rayon et masque ne changent pas.
+
+```ts
+import { fillPresentationTemplate, templateFieldsOfSlide } from "bige-sliders";
+
+const fields = templateFieldsOfSlide(deck.slides[0]);
+const result = fillPresentationTemplate(deck, deck.slides[0].id, {
+  headline: "Comprendre le cloud avant de déployer",
+  benefits: ["Coûts lisibles", "Topologie explicite", "Risques actionnables"],
+  hero: uploadedAsset, // ou son assetId ; null vide le champ
+}, { strict: true });
+
+deck = result.document;
+```
+
+Un champ facultatif vide avec `hideWhenEmpty: true` reste matérialisé dans
+l’éditeur et disparaît du PDF/PPTX. `setPresentationTemplateField` remplace un
+seul champ. Les anciens templates `slots.title` / `slots.body` restent lus et
+deviennent les clés `title` / `body` sans migration obligatoire.
+
+### Diagnostic après chargement des polices
+
+`diagnosePresentationRender` attend `document.fonts.ready`, mesure le texte
+avec le Canvas du navigateur et renvoie des diagnostics sérialisables :
+`text-wrapped`, `text-clipped`, `collision`, `font-fallback`, avec `slideId`,
+`elementIds`, sévérité et métriques.
+
+```ts
+const diagnostics = await diagnosePresentationRender(deck, {
+  collisions: "text", // ou "all" / "none"
+  intentionalOverlaps: [["caption", "photo"]],
+});
+```
+
+Une superposition durable peut aussi être déclarée sur l’objet avec
+`allowOverlapWith: ["photo"]`. Le mode `text` est le défaut pour éviter que
+chaque texte posé volontairement sur un fond ne produise du bruit.
+
+Pour les commandes d’agent, `applyDeckOperationsAtomic` (20 opérations au
+plus par défaut) et `editSlideElementsAtomic` appliquent tout ou rien. En cas
+de refus, `failedOperation` contient l’index, l’opération et le motif précis ;
+le document rendu est l’original.
+
+### Apparence du texte
+
+Les blocs et leurs `textRuns` acceptent `color: "none"` pour des glyphes
+transparents et `backgroundColor` pour leur arrière-plan. Le bloc accepte aussi
+`outline: { color, width }` et `shadow: { color, opacity, blur, offsetX,
+offsetY }`. Les couleurs peuvent être des jetons du thème. L’éditeur, le PDF et
+le PPTX les exportent ; le PPTX garde les effets éditables, tandis que le PDF
+dessine un contour vectoriel et une approximation du flou.
+
+Dans l’inspecteur, la couleur reste au niveau principal ; l’arrière-plan, le
+contour et l’ombre utilisent les mêmes accordéons que le panneau Thème. Un
+contour à `0` est absent. L’ombre propose Aucun, Petit, Moyen et Grand avant les
+réglages personnalisés. Le contour des glyphes reste continu : l’API PPTX ne
+garantit pas les pointillés sur ce type de contour.
+
+### Migration
+
+Tous les champs ajoutés sont facultatifs et `schemaVersion` reste à `1` : les
+decks existants restent valides. L’import PPTX éditable est un chantier séparé
+et n’est pas inclus dans cette API.
+
 ## Favoris et thèmes personnels : `@bookmark`, `@theme-save`
 
 Tes utilisateurs enrichissent eux-mêmes le catalogue ; toi, tu choisis où ça
@@ -884,8 +996,8 @@ const checks = checkSlideLayout(result.document, slideId); // [{ code, ids, mess
 ```
 
 Couleurs : jetons du thème (`background`, `surface`, `text`, `muted`,
-`accent`, `accentSoft`), `#rrggbb`, ou `none` pour un fond ou une bordure
-absents ; `fill_opacity` et `stroke_opacity` de 0 à 1.
+`accent`, `accentSoft`), `#rrggbb`, ou `none` pour une peinture absente ou un
+texte transparent ; `fill_opacity` et `stroke_opacity` vont de 0 à 1.
 
 Passe `result.document` à `v-model` : l’éditeur affiche le changement, et
 l’utilisateur peut l’annuler par ⌘Z. Enregistre-le toi-même : l’éditeur
@@ -923,8 +1035,8 @@ sans `position`, la slide est ajoutée à la fin.
 
 | Import | Contenu |
 |---|---|
-| `bige-sliders` | Document et types, commandes pour agents et pour le code (voir [Compatible agents](#compatible-agents)), layouts et thèmes, contrat hôte, enregistrement différé (`PresentationAutosave`). Sans Vue, utilisable dans Node. |
-| `bige-sliders/vue` | `PresentationWorkspace`, `PresentationSlideEditor`, `PresentationSlideThumbnail`, `renderSlideSnapshot`, `providePresentationHost`. |
+| `bige-sliders` | Document et types, champs de modèles (`fillPresentationTemplate`), diagnostic de rendu, commandes pour agents, layouts et thèmes, contrat hôte, enregistrement différé. |
+| `bige-sliders/vue` | `PresentationWorkspace`, `PresentationDressingEditor`, `PresentationSlideEditor`, `PresentationSlideThumbnail`, `renderSlideSnapshot`, `providePresentationHost`. |
 | `bige-sliders/style.css` | Styles de l’éditeur, limités à ses conteneurs (`.deck-ui`), en clair ou en sombre. |
 
 Le package est livré en modules ES, avec ses types TypeScript.
@@ -936,8 +1048,8 @@ Le package est livré en modules ES, avec ses types TypeScript.
 - Pas d’import de fichiers PPTX ou PDF.
 - Pas d’animations ni de transitions.
 - Vue 3 seulement.
-- Polices : Inter est livrée et embarquée dans le PDF ; les autres polices
-  ne sont pas encore garanties à l’export.
+- Polices : Inter est livrée et embarquée dans le PDF ; une autre police peut
+  être substituée et sera alors signalée par le diagnostic de rendu.
 
 ## Retours
 

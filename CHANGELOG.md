@@ -3,6 +3,32 @@
 Versions de `bige-sliders`, de la plus récente à la plus ancienne. En 0.x, un
 changement cassant fait monter le chiffre du milieu.
 
+## 0.8.0 · 2026-11-13
+
+- Textes : contour (couleur et épaisseur) et ombre dans l’éditeur, le PDF et
+  le PPTX éditable.
+- `PresentationDressingEditor` depuis `bige-sliders/vue` : édition autonome
+  d’un habillage avec `v-model`, document de référence, variables, groupes,
+  plans et assets préservés.
+- Champs de modèles `text`, `list` et `image` portés par les objets ;
+  `templateFieldsOfSlide`, `fillPresentationTemplate` et
+  `setPresentationTemplateField`. Les anciens slots `title`/`body` restent
+  compatibles. Une image remplacée garde son cadre et son cadrage ; un champ
+  facultatif vide peut être masqué à l’export.
+- `diagnosePresentationRender` mesure après chargement des polices et signale
+  retours à la ligne, texte coupé, collisions et polices substituées avec les
+  ids d’objets. `allowOverlapWith` déclare une superposition intentionnelle.
+- Rail de slides : affichage mémorisé par vignettes, titres ou les deux.
+- Inspecteur texte : accordéons dans l’ordre couleur, contour, ombre ; l’option
+  transparente est disponible pour la police, les peintures et les effets,
+  avec conservation dans le PDF et le PPTX.
+- Inspecteur texte simplifié dans l’ordre alignement, style/police/taille,
+  gras/italique/souligné, couleur et arrière-plan, contour puis ombre. Le
+  contour se désactive à 0 pt ; l’ombre propose Aucun/Petit/Moyen/Grand avant
+  les réglages personnalisés. Les accordéons partagent le composant visuel des
+  sections du thème.
+- Démo npm : deck bige-ops et recette des trois API depuis le tarball.
+
 ## 0.7.1 · 2026-11-12
 
 - Les raccourcis globaux de l’éditeur (Suppr, flèches, copier-coller, annuler,

@@ -9,7 +9,7 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "bige-sliders": "^0.7.0",
+    "bige-sliders": "^0.8.0",
     "vue": "^3.5.13"
   },
   "devDependencies": {

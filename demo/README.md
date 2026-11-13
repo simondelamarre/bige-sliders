@@ -20,5 +20,11 @@ npm run build      # dist/, servi par GitHub Pages
 | [`src/main.ts`](./src/main.ts) | Réglage du catalogue (avec les favoris et thèmes gardés), puis montage de l’app Vue. |
 | [`vite.config.js`](./vite.config.js) | `base` à `/bige-sliders/` pour GitHub Pages (variable `DEMO_BASE`), à la racine sinon. |
 
+Le deck par défaut présente bige-ops par feature : modèle de stack, coûts avant
+provisionnement, risques actionnables et déploiement ciblé. Les deux dernières
+slides servent à la recette des champs de modèle et du diagnostic de rendu. Le
+symbole officiel bige-ops est embarqué en data URL pour rester visible dans la
+démo locale, GitHub Pages, le PDF et le PPTX.
+
 Documentation complète du package : [README](../README.md) ou
 [page npm](https://www.npmjs.com/package/bige-sliders).
